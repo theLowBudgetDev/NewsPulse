@@ -3,7 +3,10 @@ import './App.css'
 
 // API Configuration
 const API_KEY = import.meta.env.VITE_NEWS_API_KEY || 'demo'
-const BASE_URL = 'https://newsapi.org/v2'
+// Use the proxy URL in production, direct API in development
+const BASE_URL = import.meta.env.PROD 
+  ? 'https://your-backend-url.com/api/news'  // Replace with your actual backend URL
+  : 'https://newsapi.org/v2'
 
 // News Categories Configuration
 const categories = [
@@ -90,13 +93,17 @@ function App() {
     setError(null)
     
     try {
-      // Build API endpoint based on search query or category
-      const endpoint = searchQuery 
-        ? `${BASE_URL}/everything?q=${encodeURIComponent(searchQuery)}&page=${pageNum}&pageSize=18&apiKey=${API_KEY}`
-        : `${BASE_URL}/top-headlines?country=us&category=${category}&page=${pageNum}&pageSize=18&apiKey=${API_KEY}`
+      // Build API endpoint and parameters
+      const endpoint = searchQuery ? 'everything' : 'top-headlines'
+      const params = new URLSearchParams({
+        ...(searchQuery ? { q: searchQuery } : { country: 'us', category }),
+        page: pageNum,
+        pageSize: 18
+      })
       
-      console.log('API Endpoint:', endpoint)
-      const response = await fetch(endpoint)
+      const apiUrl = `${BASE_URL}/news?endpoint=${endpoint}&${params}`
+      console.log('API Endpoint:', apiUrl)
+      const response = await fetch(apiUrl)
       
       if (!response.ok) {
         throw new Error('Failed to fetch news')
