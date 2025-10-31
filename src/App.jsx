@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import './App.css'
 
 // API Configuration
-const API_KEY = import.meta.env.VITE_NEWS_API_KEY || 'demo'
+const API_KEY = "d761f420c6b24daf9d15fd5f6bd98517"
 const BASE_URL = 'https://newsapi.org/v2'
 
 // News Categories Configuration
