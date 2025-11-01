@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import './App.css'
 
 // API configuration
@@ -48,8 +48,11 @@ function App() {
   const [isRefreshing, setIsRefreshing] = useState(false) // Pull to refresh state
   const [showInstallPrompt, setShowInstallPrompt] = useState(false) // PWA install prompt
   const [deferredPrompt, setDeferredPrompt] = useState(null) // PWA install event
-  const [touchStart, setTouchStart] = useState(0) // Swipe navigation
   const [showHeaderBookmark, setShowHeaderBookmark] = useState(false) // Header bookmark visibility
+  
+  // Touch navigation refs
+  const touchStartX = useRef(0)
+  const touchStartY = useRef(0)
 
   // Apply theme changes to document body and persist to localStorage
   useEffect(() => {
@@ -69,68 +72,37 @@ function App() {
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
   }, [])
 
-  // Pull to refresh and swipe navigation
-  useEffect(() => {
-    let startY = 0
-    let currentY = 0
-    let startX = 0
-    let currentX = 0
-    let isPulling = false
+  // Touch handlers for swipe navigation
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+  }
 
-    const handleTouchStart = (e) => {
-      startY = e.touches[0].clientY
-      startX = e.touches[0].clientX
-      isPulling = false
+  const handleTouchEnd = (e) => {
+    const touchEndX = e.changedTouches[0].clientX
+    const touchEndY = e.changedTouches[0].clientY
+    const diffX = touchEndX - touchStartX.current
+    const diffY = Math.abs(touchEndY - touchStartY.current)
+    
+    // Pull to refresh
+    if (window.scrollY <= 10 && (touchEndY - touchStartY.current) > 120 && Math.abs(diffX) < 50 && !isRefreshing) {
+      handlePullToRefresh()
+      return
     }
-
-    const handleTouchMove = (e) => {
-      currentY = e.touches[0].clientY
-      currentX = e.touches[0].clientX
-      const diffY = currentY - startY
-      const diffX = currentX - startX
+    
+    // Swipe navigation
+    if (Math.abs(diffX) > 100 && diffY < 50) {
+      const currentIndex = categories.findIndex(cat => cat.id === activeCategory)
       
-      // Pull to refresh - only when at top of page
-      if (window.scrollY <= 10 && diffY > 50 && Math.abs(diffX) < 30 && !isPulling && !isRefreshing) {
-        isPulling = true
-        if (diffY > 120) {
-          handlePullToRefresh()
-        }
+      if (diffX > 0 && currentIndex > 0) {
+        // Swipe right - previous category
+        setActiveCategory(categories[currentIndex - 1].id)
+      } else if (diffX < 0 && currentIndex < categories.length - 1) {
+        // Swipe left - next category
+        setActiveCategory(categories[currentIndex + 1].id)
       }
     }
-
-    const handleTouchEnd = (e) => {
-      const diffX = currentX - startX
-      const diffY = Math.abs(currentY - startY)
-      
-      // Swipe navigation (only if vertical movement is minimal)
-      if (Math.abs(diffX) > 100 && diffY < 50) {
-        const currentIndex = categories.findIndex(cat => cat.id === activeCategory)
-        
-        if (diffX > 0 && currentIndex > 0) {
-          // Swipe right - previous category
-          setActiveCategory(categories[currentIndex - 1].id)
-        } else if (diffX < 0 && currentIndex < categories.length - 1) {
-          // Swipe left - next category
-          setActiveCategory(categories[currentIndex + 1].id)
-        }
-      }
-      
-      isPulling = false
-    }
-
-    const mainElement = document.querySelector('.main')
-    if (mainElement) {
-      mainElement.addEventListener('touchstart', handleTouchStart, { passive: true })
-      mainElement.addEventListener('touchmove', handleTouchMove, { passive: true })
-      mainElement.addEventListener('touchend', handleTouchEnd, { passive: true })
-      
-      return () => {
-        mainElement.removeEventListener('touchstart', handleTouchStart)
-        mainElement.removeEventListener('touchmove', handleTouchMove)
-        mainElement.removeEventListener('touchend', handleTouchEnd)
-      }
-    }
-  }, [])
+  }
 
   // Fetch news articles from API with pagination and search support
   const fetchNews = useCallback(async (category, pageNum = 1, reset = false) => {
@@ -143,7 +115,7 @@ function App() {
         ? `${BASE_URL}/everything?q=${encodeURIComponent(searchQuery)}&language=en&page=${pageNum}&pageSize=12&apiKey=${API_KEY}`
         : category === 'general'
         ? `${BASE_URL}/top-headlines?country=us&language=en&page=${pageNum}&pageSize=12&apiKey=${API_KEY}`
-        : `${BASE_URL}/everything?q=${category}&language=en&sortBy=publishedAt&page=${pageNum}&pageSize=12&apiKey=${API_KEY}`
+        : `${BASE_URL}/top-headlines?country=us&category=${category}&language=en&page=${pageNum}&pageSize=12&apiKey=${API_KEY}`
       
       // Use CORS proxy in production to avoid CORS issues
       const proxyUrl = import.meta.env.PROD 
@@ -197,7 +169,15 @@ function App() {
     setArticles([])
     setHasMore(true)
     fetchNews(activeCategory, 1, true)
-  }, [activeCategory, searchQuery, fetchNews])
+    // Update browser history for category changes
+    if (!selectedArticle) {
+      window.history.replaceState(
+        { activeCategory }, 
+        '', 
+        `#${activeCategory}`
+      )
+    }
+  }, [activeCategory, searchQuery, fetchNews, selectedArticle])
 
   // Show/hide scroll to top button and header bookmark based on scroll position
   useEffect(() => {
@@ -211,6 +191,27 @@ function App() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  // Browser history management
+  useEffect(() => {
+    const handlePopState = (event) => {
+      if (event.state) {
+        if (event.state.selectedArticle) {
+          setSelectedArticle(event.state.selectedArticle)
+        } else {
+          setSelectedArticle(null)
+        }
+        if (event.state.activeCategory) {
+          setActiveCategory(event.state.activeCategory)
+        }
+      } else {
+        setSelectedArticle(null)
+      }
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
   // Handle manual "Load More" button click
   const handleLoadMore = async () => {
     if (!loading && hasMore && !loadingMore) {
@@ -222,7 +223,7 @@ function App() {
           ? `${BASE_URL}/everything?q=${encodeURIComponent(searchQuery)}&language=en&page=${page + 1}&pageSize=12&apiKey=${API_KEY}`
           : activeCategory === 'general'
           ? `${BASE_URL}/top-headlines?country=us&language=en&page=${page + 1}&pageSize=12&apiKey=${API_KEY}`
-          : `${BASE_URL}/everything?q=${activeCategory}&language=en&sortBy=publishedAt&page=${page + 1}&pageSize=12&apiKey=${API_KEY}`
+          : `${BASE_URL}/top-headlines?country=us&category=${activeCategory}&language=en&page=${page + 1}&pageSize=12&apiKey=${API_KEY}`
         
         // Use CORS proxy in production
         const proxyUrl = import.meta.env.PROD 
@@ -373,11 +374,18 @@ function App() {
   const openArticleReader = (article) => {
     setSelectedArticle(article)
     window.scrollTo({ top: 0, behavior: 'smooth' })
+    // Push state to browser history
+    window.history.pushState(
+      { selectedArticle: article, activeCategory }, 
+      '', 
+      `#article/${encodeURIComponent(article.title.substring(0, 50))}`
+    )
   }
 
   // Close article reader and return to main view
   const closeArticleReader = () => {
     setSelectedArticle(null)
+    window.history.back()
   }
 
   // Filter articles based on search query (title and description)
@@ -607,7 +615,7 @@ function App() {
       </nav>
 
       {/* Main content area */}
-      <main className="main">
+      <main className="main" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         {/* Pull to refresh indicator */}
         {isRefreshing && (
           <div className="refresh-indicator">
