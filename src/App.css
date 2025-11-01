@@ -252,13 +252,205 @@
   background: var(--accent-color);
   color: white;
   text-decoration: none;
+  border: none;
   border-radius: 6px;
   font-weight: 500;
+  cursor: pointer;
   transition: background 0.2s;
 }
 
 .read-more-btn:hover {
   background: var(--accent-hover);
+}
+
+/* Article Reader Styles */
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: color 0.2s;
+}
+
+.back-btn:hover {
+  color: var(--accent-color);
+}
+
+.reader-article {
+  background: var(--bg-primary);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.reader-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 2rem;
+}
+
+.reader-image-section {
+  display: flex;
+  align-items: stretch;
+}
+
+.reader-image {
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.reader-content-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.reader-header {
+  padding: 2rem 2rem 1rem 0;
+}
+
+.reader-title {
+  margin: 0 0 1rem 0;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+.reader-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-tertiary);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1rem;
+}
+
+.reader-source {
+  font-weight: 600;
+  color: var(--accent-color);
+}
+
+.reader-content {
+  padding: 0 2rem 2rem 0;
+  flex: 1;
+}
+
+.reader-description {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0 0 1.5rem 0;
+  font-weight: 500;
+}
+
+.reader-text {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.reader-footer {
+  padding: 2rem;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.source-attribution {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  border-left: 4px solid var(--accent-color);
+}
+
+.source-attribution p {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.disclaimer {
+  font-style: italic;
+  color: var(--text-tertiary) !important;
+}
+
+.reader-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.reader-actions .bookmark-btn,
+.reader-actions .share-btn,
+.original-link-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+  width: auto;
+  height: auto;
+}
+
+.reader-actions .bookmark-btn:hover,
+.reader-actions .share-btn:hover,
+.original-link-btn:hover {
+  border-color: var(--accent-color);
+  background: var(--accent-color);
+  color: white;
+}
+
+.reader-actions .bookmark-btn.bookmarked {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .reader-layout {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .reader-header {
+    padding: 1.5rem 1.5rem 1rem;
+  }
+  
+  .reader-title {
+    font-size: 1.5rem;
+  }
+  
+  .reader-content {
+    padding: 0 1.5rem 1.5rem;
+  }
+  
+  .reader-footer {
+    padding: 1.5rem;
+  }
+  
+  .reader-actions {
+    flex-direction: column;
+  }
+  
+  .reader-image {
+    height: 250px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -395,5 +587,30 @@
   
   .article-actions {
     align-self: flex-end;
+  }
+  
+  .reader-layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .reader-title {
+    font-size: 1.3rem;
+  }
+  
+  .reader-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .reader-header {
+    padding: 1rem 1rem 0.5rem;
+  }
+  
+  .reader-content {
+    padding: 0 1rem 1rem;
+  }
+  
+  .back-btn {
+    font-size: 0.9rem;
   }
 }
